@@ -1,0 +1,143 @@
+# Created by https://www.toptal.com/developers/gitignore/api/intellij,maven,eclipse
+
+### Eclipse ###
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# PyDev specific (Python IDE for Eclipse)
+*.pydevproject
+
+# CDT-specific (C/C++ Development Tooling)
+.cproject
+.autotools
+
+# Java annotation processor (APT)
+.factorypath
+
+# PDT-specific (PHP Development Tools)
+.buildpath
+
+# sbteclipse plugin
+.target
+
+# Tern plugin
+.tern-project
+
+# TeXlipse plugin
+.texlipse
+
+# STS (Spring Tool Suite)
+.springBeans
+
+# Annotation Processing
+.apt_generated/
+.apt_generated_test/
+
+# Scala IDE
+.cache-main
+.scala_dependencies
+.worksheet
+
+# .project can be tracked if it contains build config
+#.project
+
+### Eclipse Patch ###
+.sts4-cache/
+
+### IntelliJ ###
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/aws.xml
+.idea/**/contentModel.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/mongoSettings.xml
+.idea/**/sonarlint/
+.idea/**/sonarIssues.xml
+.idea/**/markdown-navigator.xml
+.idea/**/markdown-navigator-enh.xml
+.idea/**/markdown-navigator/
+.idea/codestream.xml
+.idea/**/azureSettings.xml
+.idea/httpRequests
+.idea_modules/
+.idea/replstate.xml
+.idea/$CACHE_FILE$
+
+# Optional IntelliJ project files
+#*.iml
+#modules.xml
+#.idea/misc.xml
+#*.ipr
+
+# IntelliJ output
+out/
+
+# CMake
+cmake-build-*/
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# Crashlytics (Android)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse m2e generated files
+.project
+.classpath
+
+# === 추가 항목 (권장) ===
+
+# 로그 및 환경 파일
+logs/
+*.log
+
+# 민감 설정 파일 (Spring Boot)
+application-*.yml
+application-*.properties
+
+# 환경변수
+.env
+*.properties
+
+**.idea
