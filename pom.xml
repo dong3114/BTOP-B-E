@@ -57,6 +57,27 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
+
+		<!-- websocket -->
+
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-websocket</artifactId>
+  		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- MyBatis  -->
+		<dependency>
+      		<groupId>org.mybatis.spring.boot</groupId>
+      		<artifactId>mybatis-spring-boot-starter</artifactId>
+      		<version>3.0.3</version> 
+    	</dependency>
+
 		<!-- Scope 지정할 경우 import 에서 오류가 발생될 수 있다. -->
 		<!-- SpringFw start -->
 		<dependency>
@@ -109,12 +130,13 @@
 		</dependency>
 		<!-- ORM end -->
 
+<!-- 버전 충돌 때문에 임시 삭제 -->
 		<!-- Utils Start -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>1.5.6</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.bgee.log4jdbc-log4j2</groupId>
 			<artifactId>log4jdbc-log4j2-jdbc4.1</artifactId>
