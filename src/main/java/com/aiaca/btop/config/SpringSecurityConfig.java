@@ -1,9 +1,11 @@
 package com.aiaca.btop.config;
 
 import com.aiaca.btop.security.jwt.JwtAuthenticationFilter;
+import com.aiaca.btop.security.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,15 +17,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class SpringSecurityConfig {
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
     // 인증 예외 URL 리스트
     private static final String[] AUTH_WHITELIST = {
             "/swagger-ui/**",
@@ -41,7 +40,7 @@ public class SpringSecurityConfig {
 
     // 스프링Security 설정시작
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         log.info("spring Security 설정 시작");
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -57,7 +56,7 @@ public class SpringSecurityConfig {
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "권한이 없습니다.");
                         })
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         log.info("Spring Security 설정 완료");
         return http.build();
     }
@@ -80,6 +79,14 @@ public class SpringSecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(
+            @Qualifier("authWhitelist") String[] authWhitelist,
+            JwtUtil jwtUtil
+    ) {
+        return new JwtAuthenticationFilter(authWhitelist, jwtUtil);
     }
 
     @Bean("authWhitelist")

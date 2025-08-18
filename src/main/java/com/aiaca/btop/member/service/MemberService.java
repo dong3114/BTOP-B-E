@@ -2,7 +2,6 @@ package com.aiaca.btop.member.service;
 
 import com.aiaca.btop.member.domain.LoginInfo;
 import com.aiaca.btop.member.domain.MemberInfo;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 

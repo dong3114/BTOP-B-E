@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("api/member/")
+@RequestMapping("/api/member")
 public class MemberController {
     final MemberService memberService;
     final JwtUtil jwtUtil;
