@@ -19,17 +19,17 @@ local.properties
 # Locally stored "Eclipse launch configurations"
 *.launch
 
-# PyDev specific (Python IDE for Eclipse)
+# PyDev specific
 *.pydevproject
 
-# CDT-specific (C/C++ Development Tooling)
+# CDT-specific
 .cproject
 .autotools
 
 # Java annotation processor (APT)
 .factorypath
 
-# PDT-specific (PHP Development Tools)
+# PDT-specific
 .buildpath
 
 # sbteclipse plugin
@@ -52,9 +52,6 @@ local.properties
 .cache-main
 .scala_dependencies
 .worksheet
-
-# .project can be tracked if it contains build config
-#.project
 
 ### Eclipse Patch ###
 .sts4-cache/
@@ -88,12 +85,8 @@ local.properties
 .idea_modules/
 .idea/replstate.xml
 .idea/$CACHE_FILE$
-
-# Optional IntelliJ project files
-#*.iml
-#modules.xml
-#.idea/misc.xml
-#*.ipr
+# JetBrains project files
+*.iml
 
 # IntelliJ output
 out/
@@ -120,7 +113,7 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
+# .mvn/wrapper/maven-wrapper.jar  ← 삭제
 
 # Eclipse m2e generated files
 .project
@@ -132,12 +125,34 @@ buildNumber.properties
 logs/
 *.log
 
-# 민감 설정 파일 (Spring Boot)
+# Spring Boot 환경 파일(프로파일별)
 application-*.yml
 application-*.properties
+# application.properties는 추적 유지(전체 *.properties 무시는 하지 않음)
 
-# 환경변수
+# 환경변수 파일
 .env
-*.properties
+.env.*
+# (노란줄: 기존에 있던 '*.properties' 무시는 제거했습니다)
 
-**.idea
+# OS / 에디터
+.DS_Store
+Thumbs.db
+.vscode/
+
+# JVM 크래시/덤프
+hs_err_pid*.log
+replay_pid*.log
+*.hprof
+
+# ===== Frontend (CRA: BTOP-F-E) =====
+BTOP-F-E/node_modules/
+BTOP-F-E/build/
+BTOP-F-E/.eslintcache
+BTOP-F-E/.env
+BTOP-F-E/.env.*
+BTOP-F-E/npm-debug.log*
+BTOP-F-E/yarn-error.log*
+BTOP-F-E/.parcel-cache/
+BTOP-F-E/.turbo/
+BTOP-F-E/coverage/
