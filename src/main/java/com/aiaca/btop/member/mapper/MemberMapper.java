@@ -19,5 +19,5 @@ public interface MemberMapper {
     MemberInfo getMemberInfo(@Param("memberNo") String memberNo);
 
     // 3. 로그인
-    String getMemberNo(@Param("memberId") String memberId, @Param("memberPw") String memberPw);
+    String getMemberNo(@Param("memberId") String memberId, @Param("memberPw") String memberPw); // LoginInfo
 }

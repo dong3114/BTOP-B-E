@@ -2,8 +2,90 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aiaca.btop.member.mapper.MemberMapper">
+<!-- MemberInfo 매핑 (필드명은 네 도메인 클래스에 맞춰 있음) -->
+<resultMap id="MemberInfoMap" type="com.aiaca.btop.member.domain.MemberInfo">
+    <id     property="memberNo"    column="M_NO"/>
+    <result property="memberId"    column="M_ID"/>
+    <result property="memberPw"    column="M_PW"/>
+    <result property="memberNick"  column="M_NICK"/>
+    <result property="memberPhone" column="M_PHONE"/>
+    <result property="memberEmail" column="M_EMAIL"/>
+    <result property="memberGender" column="M_GENDER"/>
+    <result property="memberBirth"  column="M_BIRTH"/>
+    <result property="memberRegion" column="M_REGION"/>
+    <result property="roleLevel"    column="ROLE_LEVEL"/>
+</resultMap>
 
+<sql id="MemberColumns">
+    M_NO, M_ID, M_PW, M_NICK, M_PHONE, M_EMAIL, M_GENDER, M_BIRTH, M_REGION, ROLE_LEVEL
+</sql>
 
+<!-- 1) 회원가입 관련: 중복 검증 -->
+<select id="validateId" parameterType="string" resultType="int">
+    SELECT COUNT(1)
+    FROM MEMBER
+    WHERE M_ID = #{memberId}
+</select>
 
+<select id="validateNick" parameterType="string" resultType="int">
+    SELECT COUNT(1)
+    FROM MEMBER
+    WHERE M_NICK = #{memberNick}
+</select>
+
+<select id="validatePhone" parameterType="string" resultType="int">
+    SELECT COUNT(1)
+    FROM MEMBER
+    WHERE M_PHONE = #{memberPhone}
+</select>
+
+<!-- 1) 회원가입: selectKey 로 M000001 형태 생성 → INSERT -->
+<insert id="createMember" parameterType="com.aiaca.btop.member.domain.MemberInfo">
+    <!--
+      주의: MAX+1은 동시성 경쟁 가능성 있음. 트랜잭션 + PK 유니크 충돌 시 재시도 전략 권장.
+      M_NO 포맷: 'M' + 6자리 제로패딩
+    -->
+    <selectKey keyProperty="memberNo" resultType="string" order="BEFORE">
+        SELECT 'M' ||
+        LPAD(NVL(MAX(TO_NUMBER(SUBSTR(M_NO, 2))), 0) + 1, 6, '0')
+        FROM MEMBER
+    </selectKey>
+
+    INSERT INTO MEMBER (
+    M_NO, M_ID, M_PW, M_NICK, M_PHONE, M_EMAIL, M_GENDER, M_BIRTH, M_REGION, ROLE_LEVEL
+    ) VALUES (
+    #{memberNo},
+    #{memberId},
+    #{memberPw},
+    #{memberNick},
+    #{memberPhone},
+    #{memberEmail},
+    #{memberGender},
+    #{memberBirth},
+    #{memberRegion},
+    #{roleLevel}
+    )
+</insert>
+
+<!-- 2) 회원 정보 조회 -->
+<select id="getAllMemberList" resultMap="MemberInfoMap">
+    SELECT <include refid="MemberColumns"/>
+    FROM MEMBER
+    ORDER BY M_NO
+</select>
+
+<select id="getMemberInfo" parameterType="string" resultMap="MemberInfoMap">
+    SELECT <include refid="MemberColumns"/>
+    FROM MEMBER
+    WHERE M_NO = #{memberNo}
+</select>
+
+<!-- 3) 로그인: 아이디/비번으로 회원번호 조회 (MVP: 평문 기준) -->
+<select id="getMemberNo" resultType="string">
+    SELECT M_NO
+    FROM MEMBER
+    WHERE M_ID = #{memberId}
+    AND M_PW = #{memberPw}
+</select>
 
 </mapper>
