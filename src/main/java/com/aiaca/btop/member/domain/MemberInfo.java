@@ -11,7 +11,8 @@ public class MemberInfo {
     private final String memberPw;
     private final String memberNick;
     private final String memberPhone;
-    private final int memberGender;
+    private final String memberEmail;
+    private final char memberGender;
     private final String memberBirth;
     private final String memberRegion;
     private final int roleLevel;
