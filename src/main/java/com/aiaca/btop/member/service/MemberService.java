@@ -7,7 +7,8 @@ import java.util.List;
 
 public interface MemberService {
     // 1. 회원가입 관련
-    int createMember(MemberInfo memberInfo);
+    MemberInfo register(MemberInfo memberInfo);
+    int validateId(String memberId);
 
     // 2. 로그인 관련
     int validateLogin(LoginInfo loginInfo);
