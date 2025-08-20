@@ -13,7 +13,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SttWsHandler extends BinaryWebSocketHandler {
-  System.out.println("[WS] STT open " + session.getId());
 
   private static class Pipe {
     Process ffmpeg; OutputStream ffIn; InputStream ffOut;

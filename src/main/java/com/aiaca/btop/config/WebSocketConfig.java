@@ -36,6 +36,6 @@ public SttWsHandler sttWsHandler(org.springframework.beans.factory.ObjectFactory
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
     registry.addHandler(echoWsHandler(), "/ws/echo").setAllowedOriginPatterns("*");
-    registry.addHandler(sttWsHandler(),  "/ws/stt" ).setAllowedOriginPatterns("*");
+    registry.addHandler(sttWsHandler(null),  "/ws/stt" ).setAllowedOriginPatterns("*");
   }
 }

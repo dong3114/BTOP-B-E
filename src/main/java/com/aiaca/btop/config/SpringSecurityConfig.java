@@ -33,6 +33,7 @@ public class SpringSecurityConfig {
             "/api/home",
             "/api/member/register/**",
             "/api/member/login",
+            "/api/ping/**",
 
             // 웹소켓(JWT) 검증은 HandshakeInterceptor/ChannelInterceptor
             "/ws/**"        // 핸드셰이크 단계에서 권한에러 발생할 수 있어서 추가.
@@ -64,16 +65,16 @@ public class SpringSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // 프론트엔드 URL 추가, 배포시엔 xml 파일등으로 주입~
+        config.setAllowedOriginPatterns(List.of("http://localhost:*")); // 프론트엔드 URL 추가, 배포시엔 xml 파일등으로 주입~
         config.setAllowCredentials(true);                               // 쿠키 쓸거 고려해서 추가 안쓸거면 false
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedHeaders(List.of("*"));     // 개발 중엔 * 권장
+        // config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
         // CORS 응답 헤더 노출 설정 (프론트에서 읽을 필요가 있을 때만 활성화)
         // 예: 파일 다운로드 시 "Content-Disposition", POST 요청 후 "Location" 헤더 확인
         // config.setExposedHeaders(List.of("Location", "Content-Disposition"));
-
         config.setMaxAge(3600L);    // 캐시(초)
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
