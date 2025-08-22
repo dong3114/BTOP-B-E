@@ -23,7 +23,8 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 public class SpringSecurityConfig {
-    // 인증 예외 URL 리스트
+
+    // 기존 화이트리스트 + 필요한 것만 보강
     private static final String[] AUTH_WHITELIST = {
             "/swagger-ui/**",
             "/v3/api-docs/**",
@@ -34,48 +35,61 @@ public class SpringSecurityConfig {
             "/api/member/register/**",
             "/api/member/login",
             "/api/ping/**",
+            // WebSocket 핸드셰이크는 인증없이 허용 (JWT는 핸드셰이크 인터셉터에서)
+            "/ws/**",
 
-            // 웹소켓(JWT) 검증은 HandshakeInterceptor/ChannelInterceptor
-            "/ws/**"        // 핸드셰이크 단계에서 권한에러 발생할 수 있어서 추가.
+            // 정적 리소스/루트
+            "/",
+            "/index.html",
+            "/static/**",
+            "/public/**",
+            "/assets/**"
     };
 
-    // 스프링Security 설정시작
+    @Bean("authWhitelist")
+    public String[] authWhiteList() {
+        return AUTH_WHITELIST;
+    }
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
-        log.info("spring Security 설정 시작");
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtFilter) throws Exception {
+        log.info("Spring Security 설정 시작");
+
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(AUTH_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "권한이 없습니다.");
-                        })
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "권한이 없습니다."))
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         log.info("Spring Security 설정 완료");
         return http.build();
     }
-    // CORS 설정 추가
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:*")); // 프론트엔드 URL 추가, 배포시엔 xml 파일등으로 주입~
-        config.setAllowCredentials(true);                               // 쿠키 쓸거 고려해서 추가 안쓸거면 false
 
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));     // 개발 중엔 * 권장
-        // config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-
-        // CORS 응답 헤더 노출 설정 (프론트에서 읽을 필요가 있을 때만 활성화)
-        // 예: 파일 다운로드 시 "Content-Disposition", POST 요청 후 "Location" 헤더 확인
-        // config.setExposedHeaders(List.of("Location", "Content-Disposition"));
-        config.setMaxAge(3600L);    // 캐시(초)
+        // 개발 편의: 포트 전체 허용
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+        ));
+        config.setAllowCredentials(true);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        // 필요한 경우만 노출
+        config.setExposedHeaders(List.of("Location", "Content-Disposition"));
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -89,7 +103,4 @@ public class SpringSecurityConfig {
     ) {
         return new JwtAuthenticationFilter(authWhitelist, jwtUtil);
     }
-
-    @Bean("authWhitelist")
-    public String[] authWhiteList() { return AUTH_WHITELIST;}
 }
