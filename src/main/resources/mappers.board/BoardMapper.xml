@@ -3,4 +3,68 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aiaca.btop.board.mapper.BoardMapper">
 
+<resultMap id="BoardInfoMap" type="com.aiaca.btop.member.domain.BoardInfo">
+    <id     property="boardNo"    column="B_NO"/>
+    <result property="memberNo"    column="M_NO"/>
+    <result property="boardTitle"    column="B_TITLE"/>
+    <result property="boardDetail"  column="B_DETAIL"/>
+    <result property="createdAt" column="DATETIME"/>
+    <result property="updatedAt" column=""/>
+    <result property="views"  column="VIEWS"/>
+</resultMap>
+
+<sql id="BoardColumns">
+    M_NO, B_NO, B_TITLE, B_DETAIL, DATETIME, VIEWS,
+</sql>
+
+<select id="getBoardList" parameterType="string" resultType="BoardInfoMap">
+    SELECT <include refid="BoardColumns"></include>
+    <if test = "memberNo != null">
+        WHERE M_NO = #{memberNo}
+    </if>
+</select>
+
+<select id="getBoardInfo" parameterType="int" resultType="BoardInfoMap">
+    SELECT *
+    FROM Board
+    WHERE B_NO = #{boardNo}
+</select>
+
+<select id="getBoardCount" resultType="int">
+    SELECT count(*)
+    FROM Board
+</select>
+
+<select id="getBoardInfo" parameterType="int" resultType="BoardInfoMap">
+    SELECT *
+    FROM Board
+    WHERE B_NO = #{boardNo}
+</select>
+
+<insert id="insertBoardInfo" parameterType="BoardInfoMap" >
+    INSERT INTO BOARD (
+        M_NO, B_TITLE, B_DETAIL, DATETIME, VIEWS
+    )
+    VALUES (
+               #{memberNo},#{boardTitle},#{boardDetail}, SYSDATE, #{views}
+           )
+</insert>
+
+<update id="updateBoardInfo" parameterType="BoardInfoMap">
+    UPDATE BOARD
+    SET B_TITLE = #{boardTitle}, B_DETAIL = #{boardDetail}
+    WHERE B_NO = #{boardNo}
+</update>
+
+<delete id="deleteBoardInfo" parameterType="long">
+    DELETE FROM BOARD
+    WHERE B_NO = #{boardNo}
+</delete>
+
+<update id="increaseViews" parameterType="long">
+    UPDATE BOARD
+    SET VIEWS = VIEWS + 1
+    WHERE B_NO = #{boardNo}
+</update>
+
 </mapper>
