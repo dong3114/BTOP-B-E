@@ -1,4 +1,4 @@
-//JJ
+// JJ
 package com.aiaca.btop.ws;
 
 import com.aiaca.btop.stt.SttService;
@@ -44,21 +44,27 @@ public class SttWsHandler extends BinaryWebSocketHandler {
       p.ffOut = proc.getInputStream();
       pipes.put(session.getId(), p);
 
+      // 2-인자 Listener (raw, standard)
       SttService stt = sttFactory.getObject();
       stt.start(new SttService.Listener() {
-        @Override public void onPartial(String text) {
-          try { session.sendMessage(new TextMessage("{\"partial\":\"" + text + "\"}")); } catch (IOException ignore) {}
+        @Override public void onPartial(String raw, String standard) {
+          String std = (standard == null) ? "" : standard;
+          safeSend(session,
+            "{\"partial\":{\"stt\":\"" + escape(raw) + "\",\"standard\":\"" + escape(std) + "\"}}"
+          );
         }
-        @Override public void onFinal(String text) {
-          try { session.sendMessage(new TextMessage("{\"final\":\"" + text + "\"}")); } catch (IOException ignore) {}
+        @Override public void onFinal(String raw, String standard) {
+          safeSend(session,
+            "{\"final\":{\"stt\":\"" + escape(raw) + "\",\"standard\":\"" + escape(standard) + "\"}}"
+          );
         }
         @Override public void onError(String msg, Throwable t) {
-          try { session.sendMessage(new TextMessage("{\"error\":\"" + msg.replace("\"","'") + "\"}")); } catch (IOException ignore) {}
+          safeSend(session, "{\"error\":\"" + escape(msg) + "\"}");
         }
       });
       stts.put(session.getId(), stt);
 
-      // ffmpeg stdout(PCM) 읽어서 STT로 공급
+      // ffmpeg stdout(PCM) -> STT 공급
       p.es.submit(() -> {
         byte[] buf = new byte[4096];
         try (InputStream is = p.ffOut) {
@@ -67,7 +73,7 @@ public class SttWsHandler extends BinaryWebSocketHandler {
             long total = p.pcmBytes.addAndGet(n);
             stt.feedPcm(buf, n);
             if (total % (16000 * 2) < 4096) {
-              session.sendMessage(new TextMessage("{\"partial\":\"pcm_bytes=" + total + "\"}"));
+              safeSend(session, "{\"partial\":\"pcm_bytes=" + total + "\"}");
             }
           }
         } catch (IOException e) {
@@ -77,7 +83,7 @@ public class SttWsHandler extends BinaryWebSocketHandler {
         }
       });
 
-      // ffmpeg stderr 로그(디버깅용)
+      // ffmpeg stderr 로그
       p.es.submit(() -> {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(proc.getErrorStream(), StandardCharsets.UTF_8))) {
           for (String line; (line = br.readLine()) != null; ) {
@@ -87,10 +93,8 @@ public class SttWsHandler extends BinaryWebSocketHandler {
       });
 
     } catch (IOException e) {
-      try {
-        session.sendMessage(new TextMessage("{\"error\":\"ffmpeg failed: " + e.getMessage().replace("\"","'") + "\"}"));
-        session.close(CloseStatus.SERVER_ERROR);
-      } catch (IOException ignore) {}
+      safeSend(session, "{\"error\":\"ffmpeg failed: " + escape(e.getMessage()) + "\"}");
+      try { session.close(CloseStatus.SERVER_ERROR); } catch (IOException ignore) {}
     }
   }
 
@@ -135,5 +139,34 @@ public class SttWsHandler extends BinaryWebSocketHandler {
     }
     SttService stt = stts.remove(session.getId());
     if (stt != null) try { stt.close(); } catch (IOException ignore) {}
+  }
+
+  /** JSON 안전 이스케이프 */
+  private static String escape(String s) {
+    if (s == null) return "";
+    StringBuilder sb = new StringBuilder(s.length() + 16);
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      switch (c) {
+        case '"':  sb.append("\\\""); break;
+        case '\\': sb.append("\\\\"); break;
+        case '\n': sb.append("\\n");  break;
+        case '\r': sb.append("\\r");  break;
+        case '\t': sb.append("\\t");  break;
+        default:
+          if (c < 0x20) sb.append(String.format("\\u%04x", (int) c));
+          else sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
+
+  /** sendMessage 안전 래퍼 */
+  private static void safeSend(WebSocketSession session, String json) {
+    try {
+      if (session != null && session.isOpen()) {
+        session.sendMessage(new TextMessage(json));
+      }
+    } catch (IOException ignore) {}
   }
 }
