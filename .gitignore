@@ -138,6 +138,7 @@ application-*.properties
 
 # 환경변수
 .env
+.venv
 *.properties
 
 **.idea
