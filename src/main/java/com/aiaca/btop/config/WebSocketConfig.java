@@ -23,15 +23,15 @@ public class WebSocketConfig implements WebSocketConfigurer {
   }
 
   @Bean
-  @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  public SttService sttService() {
-    return new MockSttService(); 
-  }
-
- @Bean
-public SttWsHandler sttWsHandler(org.springframework.beans.factory.ObjectFactory<com.aiaca.btop.stt.SttService> sttFactory) {
-  return new SttWsHandler(sttFactory);
+  public com.aiaca.btop.stt.SttService sttService(com.aiaca.btop.stt.PythonSttClient python) {
+    return python;
 }
+
+
+  @Bean
+  public SttWsHandler sttWsHandler(org.springframework.beans.factory.ObjectFactory<com.aiaca.btop.stt.SttService> sttFactory) {
+      return new SttWsHandler(sttFactory);
+  }
 
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
