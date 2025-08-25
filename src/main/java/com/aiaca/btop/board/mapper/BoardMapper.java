@@ -1,10 +1,11 @@
 package com.aiaca.btop.board.mapper;
 
 import com.aiaca.btop.board.domain.BoardInfo;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+@Mapper // 스프링 빈주입을 해야함
 public interface BoardMapper {
     // 1. 조회
     List<BoardInfo> getBoardList();     // 전체 게시판 로드
