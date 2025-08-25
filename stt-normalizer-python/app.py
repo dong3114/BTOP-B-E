@@ -13,10 +13,9 @@ app = FastAPI()
 
 @dataclass
 class NormalizeOptions:
-    stt_model: str = "gpt-4o-transcribe"     # "whisper-1" 도 가능
-    chat_model: str = "gpt-4o-mini"          # 정확도↑면 "gpt-4o"
+    stt_model: str = "whisper-1"
+    chat_model: str = "gpt-5-nano"
     language_hint: str = "ko"
-    temperature: float = 0.0
     keep_style: bool = True
 
 PROMPT_TEMPLATE = """\
@@ -26,6 +25,7 @@ PROMPT_TEMPLATE = """\
 - 맞춤법/띄어쓰기 및 어휘를 표준어로 변환
 - 존대/반말은 원문 존중{style_note}
 - 숫자/고유명사 유지, 불필요한 구두점 제거
+- 단어 단위로 나눠서 사투리를 번역
 - 결과만 JSON으로 반환: {{"standard": "..."}}
 
 방언:
@@ -76,7 +76,7 @@ def health():
 @app.post("/api/stt-normalize")
 async def stt_normalize(
     file: UploadFile,
-    engine: str = Form("gpt-4o-transcribe"),
+    engine: str = Form("whisper-1"),
     llm: str = Form("gpt-4o-mini"),
     keep_style: bool = Form(True),
     language_hint: str = Form("ko"),

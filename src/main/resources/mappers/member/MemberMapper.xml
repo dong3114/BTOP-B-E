@@ -63,7 +63,7 @@
     #{memberGender},
     #{memberBirth},
     #{memberRegion},
-    #{roleLevel}
+    1
     )
 </insert>
 
@@ -87,5 +87,4 @@
     WHERE M_ID = #{memberId}
     AND M_PW = #{memberPw}
 </select>
-
 </mapper>

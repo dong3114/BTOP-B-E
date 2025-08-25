@@ -140,5 +140,8 @@ application-*.properties
 .env
 .venv
 *.properties
-
+.env.*
 **.idea
+
+__pycache__/
+*.pyc
