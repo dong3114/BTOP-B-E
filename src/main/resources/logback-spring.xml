@@ -25,6 +25,10 @@
     <logger name="jdbc.sqltiming"      level="off" />
 <logger name="com.zaxxer.hikari"   level="info" /> <!-- log 상세출력 debug -->
 
+    <logger name="org.apache.ibatis" level="DEBUG"/>
+    <logger name="com.aiaca.btop" level="DEBUG"/>
+    <logger name="java.sql.PreparedStatement" level="DEBUG"/>
+
 <!-- 기본로거 -->    
 <root level="info">
 <appender-ref ref="CONSOLE" />

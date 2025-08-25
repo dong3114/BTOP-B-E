@@ -1,72 +1,55 @@
-//JJ
 package com.aiaca.btop.stt;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 @Component
 public class PythonSttClient implements SttService {
 
   private final WebClient webClient;
   private final String sttUrl;
+  private final ObjectMapper om = new ObjectMapper();
 
   private Listener listener;
-  private final ByteArrayOutputStream pcmBuf = new ByteArrayOutputStream(1 << 20); // 1MB 초기
+  private final ByteArrayOutputStream pcmBuf = new ByteArrayOutputStream(1 << 20); // 1MB
 
-  // application.properties 에서 stt.python.url 로 주입
-  public PythonSttClient(
-      WebClient.Builder builder,
-      @Value("${stt.python.url}") String sttUrl
-  ) {
+  public PythonSttClient(WebClient.Builder builder, @Value("${stt.python.url}") String sttUrl) {
     this.webClient = builder.build();
     this.sttUrl = sttUrl;
   }
 
   @Override public void start(Listener listener) {
     this.listener = listener;
-    // 스트리밍 중간(부분) 결과는 FastAPI가 WebSocket/스트리밍 엔드포인트가 있어야 가능.
-    // 지금은 최종화 시 한 번만 호출한다.
   }
 
   @Override public void feedPcm(byte[] data, int len) {
-    // ffmpeg 가 뽑아주는 16kHz mono s16le PCM을 누적
     if (data == null || len <= 0) return;
     pcmBuf.write(data, 0, len);
-    // (선택) 진행 상황을 부분 결과로 흉내내고 싶다면 여기서 bytes 카운트로 onPartial 호출 가능
-    if (listener != null) listener.onPartial("...", null); // 표준어는 아직 없으니 null
+    // 🎯 더 이상 더미 partial("...") 보내지 않음
   }
 
-  // ====== 호환용 래퍼 메서드 (기존 코드가 사용 중인 경우 대비) ======
-  /** 기존 코드 호환: 오프셋/길이가 있는 버퍼를 누적 처리 */
+  // (구호환)
   public void sendChunk(byte[] data, int off, int len) {
     if (data == null || len <= 0) return;
     if (off < 0 || len < 0 || off + len > data.length) return;
-    byte[] slice = new byte[len];
-    System.arraycopy(data, off, slice, 0, len);
-    this.feedPcm(slice, len);
+    pcmBuf.write(data, off, len);
   }
+  public void finish() { stopAndFinalize(); }
 
-  /** 기존 코드 호환: 스트림 종료/최종화 */
-  public void finish() {
-    this.stopAndFinalize();
-  }
-  // =============================================================
-
-  @Override public void stopAndFinalize() {
+  @Override
+  public void stopAndFinalize() {
     if (listener == null) return;
-
     try {
-      // 1) 누적 PCM -> WAV 래핑
       byte[] pcm = pcmBuf.toByteArray();
       if (pcm.length == 0) {
         listener.onError("녹음 데이터가 비어있습니다.", null);
@@ -74,36 +57,61 @@ public class PythonSttClient implements SttService {
       }
       byte[] wav = pcm16MonoToWav(pcm, 16000);
 
-      // 2) multipart 업로드
-      MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
-      form.add("audio", new NamedBytes(wav, "audio.wav"));
-      // 필요 시 엔진/모델 파라미터도 함께 전송:
-      // form.add("engine", "gpt-4o-transcribe");
-      // form.add("llm", "gpt-4o-mini");
+      // 멀티파트(파일명 포함)
+      ByteArrayResource wavRes = new ByteArrayResource(wav) {
+        @Override public String getFilename() { return "audio.wav"; }
+      };
+      org.springframework.http.client.MultipartBodyBuilder mb = new org.springframework.http.client.MultipartBodyBuilder();
+      // 서버마다 파라미터명이 달라서 여러 키로 전송
+      mb.part("audio",       wavRes).filename("audio.wav").contentType(MediaType.APPLICATION_OCTET_STREAM);
+      mb.part("file",        wavRes).filename("audio.wav").contentType(MediaType.APPLICATION_OCTET_STREAM);
+      mb.part("upload_file", wavRes).filename("audio.wav").contentType(MediaType.APPLICATION_OCTET_STREAM);
+      // 가능하면 서버가 원문/표준어 둘 다 주도록 힌트
+      mb.part("return_both", "true");
+
+      String targetUrl = normalizeEndpoint(sttUrl);
 
       String body = webClient.post()
-          .uri(sttUrl) // 예: http://127.0.0.1:7000/api/stt-normalize
+          .uri(targetUrl)
           .contentType(MediaType.MULTIPART_FORM_DATA)
-          .body(BodyInserters.fromMultipartData(form))
+          .body(BodyInserters.fromMultipartData(mb.build()))
           .retrieve()
           .bodyToMono(String.class)
           .block();
 
-      // 3) 응답 파싱 (유연 처리)
-      // 기대 JSON: {"raw":"...","standard":"..."} 또는 {"text":"..."} 등
-      String raw = extractJson(body, "raw");
-      String std = extractJson(body, "standard");
+      // === 응답 파싱: 원문/표준어를 각자 독립적으로 찾기 ===
+      String raw = null, std = null;
+      try {
+        if (body != null && !body.isBlank()) {
+          JsonNode root = om.readTree(body);
 
-      if ((raw == null || raw.isBlank()) && (std == null || std.isBlank())) {
-        // fallback
-        raw = (body == null) ? "" : body;
+          // 원문 후보(사투리/비정규): 서비스별로 쓰일 수 있는 키들을 폭넓게 탐색(깊이 탐색)
+          raw = firstNonBlankDeep(root,
+              "raw","dialect","original","stt_raw","raw_text","rawText","asr","transcript","text");
+
+          // 표준어 후보(정규화 텍스트)
+          std = firstNonBlankDeep(root,
+              "standard","normalized","normalized_text","norm","std","standard_text");
+
+          // ⚠️ 절대 표준어를 원문으로 복사하지 않음 (raw가 없으면 빈값으로 둠)
+          // 단, 표준어도 없고 텍스트 키만 하나 있을 때는 원문으로 간주할 수 있으나
+          // 혼선을 피하려면 그대로 둡니다.
+          if (raw != null && std != null) {
+            // 동일 문자열이면 그대로 두되, UI에서 두 칸이 같아 보일 수 있음
+            // 필요하면 여기서 같을 때 raw=null 처리 가능(선택)
+          }
+        }
+      } catch (Exception ignore) {
+        // 비 JSON 응답이면 굳이 원문에 때려넣지 않음
       }
+
+      if (raw == null) raw = "";
       if (std == null) std = "";
 
       listener.onFinal(raw, std);
 
     } catch (Exception e) {
-      if (listener != null) listener.onError("Python STT 호출 실패: " + e.getMessage(), e);
+      listener.onError("Python STT 호출 실패: " + e.getMessage(), e);
     } finally {
       pcmBuf.reset();
     }
@@ -113,27 +121,27 @@ public class PythonSttClient implements SttService {
     pcmBuf.reset();
   }
 
-  // --- helpers ---
+  // ----------------- helpers -----------------
 
   /** 간단 WAV 래퍼 (PCM 16-bit mono) */
   private static byte[] pcm16MonoToWav(byte[] pcm, int sampleRate) throws IOException {
     int dataLen = pcm.length;
-    int byteRate = sampleRate * 2; // mono * 16bit(2바이트)
+    int byteRate = sampleRate * 2; // mono * 16bit
     ByteArrayOutputStream out = new ByteArrayOutputStream(44 + dataLen);
-    // RIFF 헤더
+
     out.write(new byte[]{'R','I','F','F'});
     writeLE32(out, 36 + dataLen);
     out.write(new byte[]{'W','A','V','E'});
-    // fmt chunk
+
     out.write(new byte[]{'f','m','t',' '});
-    writeLE32(out, 16);       // Subchunk1Size
+    writeLE32(out, 16);
     writeLE16(out, 1);        // PCM
     writeLE16(out, 1);        // mono
     writeLE32(out, sampleRate);
     writeLE32(out, byteRate);
-    writeLE16(out, (short)2); // blockAlign
-    writeLE16(out, (short)16);// bitsPerSample
-    // data chunk
+    writeLE16(out, (short)2);
+    writeLE16(out, (short)16);
+
     out.write(new byte[]{'d','a','t','a'});
     writeLE32(out, dataLen);
     out.write(pcm);
@@ -151,23 +159,50 @@ public class PythonSttClient implements SttService {
     os.write((v >>> 24) & 0xff);
   }
 
-  /** 아주 단순한 키 추출 (정식 JSON 파서는 Jackson 써도 됩니다) */
-  private static String extractJson(String json, String key) {
-    if (json == null) return null;
-    String needle = "\"" + key + "\":";
-    int idx = json.indexOf(needle);
-    if (idx < 0) return null;
-    int start = json.indexOf('"', idx + needle.length());
-    if (start < 0) return null;
-    int end = json.indexOf('"', start + 1);
-    if (end < 0) return null;
-    return json.substring(start + 1, end);
+  /** 깊이 우선 탐색으로 첫 번째 non-blank 값을 찾음 */
+  private static String firstNonBlankDeep(JsonNode node, String... keys) {
+    if (node == null) return null;
+
+    // 1) 현재 객체에서 직접 찾기
+    for (String k : keys) {
+      JsonNode n = node.get(k);
+      if (n != null && !n.isNull()) {
+        String v = n.asText();
+        if (v != null && !v.isBlank()) return v;
+      }
+    }
+
+    // 2) 객체/배열이면 하위로 재귀
+    if (node.isObject()) {
+      var it = node.fields();
+      while (it.hasNext()) {
+        var e = it.next();
+        String v = firstNonBlankDeep(e.getValue(), keys);
+        if (v != null && !v.isBlank()) return v;
+      }
+    } else if (node.isArray()) {
+      for (JsonNode n : node) {
+        String v = firstNonBlankDeep(n, keys);
+        if (v != null && !v.isBlank()) return v;
+      }
+    }
+    return null;
   }
 
-  /** 멀티파트용 이름 가진 바이트 리소스 */
-  static class NamedBytes extends ByteArrayResource {
-    private final String filename;
-    NamedBytes(byte[] bytes, String filename) { super(bytes); this.filename = filename; }
-    @Override public String getFilename() { return filename; }
+  /** 엔드포인트 보정: /api/stt-normalize 를 기본으로 맞춤 */
+  private static String normalizeEndpoint(String url) {
+    if (url == null || url.isBlank()) return "http://127.0.0.1:7000/api/stt-normalize";
+    String trimmed = url.trim();
+    try {
+      java.net.URI uri = java.net.URI.create(trimmed);
+      String path = uri.getPath();
+      if (path == null || path.isBlank() || "/".equals(path)) {
+        return uri.resolve("/api/stt-normalize").toString();
+      }
+      return trimmed.replaceAll("/+$", "");
+    } catch (IllegalArgumentException e) {
+      String u = trimmed.replaceAll("/+$", "");
+      return u.endsWith("/api/stt-normalize") ? u : (u + "/api/stt-normalize");
+    }
   }
 }
