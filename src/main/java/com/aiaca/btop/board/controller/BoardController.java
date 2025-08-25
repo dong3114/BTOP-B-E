@@ -51,6 +51,4 @@ public class BoardController {
         // boardService.deleteBoard(boardNo);
         return ResponseEntity.ok("게시물이 성공적으로 삭제되었습니다. ");
     }
-
-
 }
