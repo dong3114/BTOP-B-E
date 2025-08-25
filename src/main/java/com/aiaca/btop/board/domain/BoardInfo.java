@@ -1,14 +1,18 @@
 package com.aiaca.btop.board.domain;
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
-@Getter
+@Data
+@NoArgsConstructor
 public class BoardInfo {
-    private final long boardNo;
-    private final LocalDateTime createdAt;
-    private final String memberNo;
+    private  long boardNo;
+    private  LocalDateTime createdAt;
+    private  String memberNo;
 
     private int views;
     private String boardTitle;

@@ -37,6 +37,7 @@ public class SpringSecurityConfig {
             "/api/ping/**",
             // WebSocket 핸드셰이크는 인증없이 허용 (JWT는 핸드셰이크 인터셉터에서)
             "/ws/**",
+            "/api/board/**",
 
             // 정적 리소스/루트
             "/",

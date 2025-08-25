@@ -12,5 +12,5 @@ public interface BoardService {
     void insertBoardInfo(BoardInfo boardInfo);
     void updateBoard(BoardInfo boardInfo);
     void deleteBoard(long boardNo);
-    void increaseViws(long boardNo);
+    void increaseViews(long boardNo);
 }
