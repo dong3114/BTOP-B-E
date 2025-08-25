@@ -76,7 +76,7 @@ def health():
 @app.post("/api/stt-normalize")
 async def stt_normalize(
     file: UploadFile,
-    engine: str = Form("gpt-4o-transcribe"),
+    engine: str = Form("whisper-1"),
     llm: str = Form("gpt-4o-mini"),
     keep_style: bool = Form(True),
     language_hint: str = Form("ko"),
