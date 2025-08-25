@@ -20,16 +20,16 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional // RuntimeException/Error 발생 시 자동 롤백
     public MemberInfo register(MemberInfo memberInfo) {
-        if (memberMapper.validateId(memberInfo.getMemberId()) == 0) {
+        if (memberMapper.validateId(memberInfo.getMemberId()) > 0) {
             log.error("아이디가 중복입니다.");
             throw new IllegalStateException("아이디가 중복입니다.");
         }
-        if (memberMapper.validateNick(memberInfo.getMemberNick()) == 0) {
+        if (memberMapper.validateNick(memberInfo.getMemberNick()) > 0) {
             log.error("닉네임이 중복입니다.");
             throw new IllegalStateException("닉네임이 중복입니다.");
         }
         if (memberInfo.getMemberPhone() != null && !memberInfo.getMemberPhone().isBlank()) {
-            if (memberMapper.validatePhone(memberInfo.getMemberPhone()) == 0) {
+            if (memberMapper.validatePhone(memberInfo.getMemberPhone()) > 0) {
                 log.error("휴대폰 번호가 중복입니다.");
                 throw new IllegalStateException("휴대폰 번호가 중복입니다.");
             }
@@ -74,6 +74,9 @@ public class MemberServiceImpl implements MemberService{
     public int validateId(String memberId) {
         return memberMapper.validateId(memberId);
     }
+
+    @Override
+    public int validateNick(String memberNick) { return memberMapper.validateNick(memberNick); }
 
     private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 }

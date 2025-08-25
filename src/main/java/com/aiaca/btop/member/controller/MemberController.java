@@ -8,6 +8,7 @@ import com.aiaca.btop.security.jwt.dto.JwtTokenDTO;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -43,19 +44,46 @@ public class MemberController {
 
         return ResponseEntity.ok(body);
     }
-
-    // 아이디 중복 검사 조회
-    @GetMapping("/validate/id")
+    /**
+     *  회원 가입 관련 메서드 모음
+     */
+    @GetMapping("/register/validate/id")
     public ResponseEntity<?> validateId(@RequestParam String memberId) {
         boolean available = memberService.validateId(memberId) == 0;
         return ResponseEntity.ok(Map.of("available", available));
     }
-
+    @GetMapping("/register/validate/nick")
+    public ResponseEntity<?> validateNick(@RequestParam String memberNick) {
+        boolean available = memberService.validateNick(memberNick) == 0;
+        return ResponseEntity.ok(Map.of("available", available));
+    }
     @PostMapping("/register")
     public ResponseEntity<?> register(@Validated @RequestBody MemberInfo memberInfo) {
         MemberInfo saved = memberService.register(memberInfo);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
+    /**
+     * 회원 상세 정보 로드
+     * @param authorization 요청 헤더
+     * @return 회원정보 로드, 프로필 사진은 따로
+     */
+    @GetMapping("/info")
+    public ResponseEntity<?> getMemberInfo(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization
+    ) {
+        if (authorization == null || !jwtUtil.validateToken(authorization)) {
+            return ResponseEntity.status(401).body(Map.of("message", "유효하지 않은 토큰입니다."));
+        }
 
+        String memberNo = jwtUtil.extractMemberNo(authorization); // ← 여기서도 헤더 그대로
+        if (memberNo == null || memberNo.isBlank()) {
+            return ResponseEntity.status(401).body(Map.of("message", "토큰에 회원 정보가 없습니다."));
+        }
 
+        MemberInfo info = memberService.getMemberInfo(memberNo);
+        if (info == null) {
+            return ResponseEntity.status(404).body(Map.of("message", "회원 정보를 찾을 수 없습니다."));
+        }
+        return ResponseEntity.ok(info);
+    }
 }
