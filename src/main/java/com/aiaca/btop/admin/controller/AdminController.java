@@ -28,8 +28,8 @@ public class AdminController {
     final MemberService memberService;
     final JwtUtil jwtUtil;
 	
-    @PostMapping("")
-    public ResponseEntity<?> login(
+    @PostMapping("/login")
+    public ResponseEntity<?> adminLogin(
             @RequestBody @Validated LoginInfo loginInfo
     ) {
         // 1. 로그인 유효성 검증
@@ -42,7 +42,9 @@ public class AdminController {
         String memberNo = memberService.getMemberNo(loginInfo.getMemberId(), loginInfo.getMemberPw());
         MemberInfo member = memberService.getMemberInfo(memberNo);
         // 회원 권한 검증
-        if(member.getRoleLevel() != 2) {
+
+        // System.out.println("ggggggggggggggggggggggggggg"+member.getRoleLevel());
+        if(member.getRoleLevel() == 1) {
         	log.warn("권한이 없는 아이디 입니다.");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
