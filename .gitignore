@@ -142,3 +142,6 @@ application-*.properties
 *.properties
 
 **.idea
+
+__pycache__/
+*.pyc
