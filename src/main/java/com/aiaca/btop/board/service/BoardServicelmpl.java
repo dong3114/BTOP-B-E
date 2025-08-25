@@ -29,7 +29,7 @@ public class BoardServicelmpl implements BoardService {
     }
     @Override
     public BoardInfo getBoardInfo(long boardNo){
-        boardMapper.incresaeViews(boardNo);
+        increaseViws(boardNo);
         return boardMapper.getBoardInfo(boardNo);
     }
     @Override
@@ -48,7 +48,8 @@ public class BoardServicelmpl implements BoardService {
     public void deleteBoard(long boardNo){
         boardMapper.deleteBoardInfo(boardNo);
     }
-    public void increaseViws(long boardNo) {
+    // 조회수 증가 내부 로직
+    private void increaseViws(long boardNo) {
         boardMapper.incresaeViews(boardNo);
     }
 

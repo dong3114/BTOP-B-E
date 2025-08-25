@@ -24,7 +24,7 @@
     </if>
 </select>
 
-<select id="getBoardInfo" parameterType="int" resultType="BoardInfoMap">
+<select id="getBoardInfo" parameterType="int" resultType="long">
     SELECT *
     FROM Board
     WHERE B_NO = #{boardNo}
@@ -41,7 +41,7 @@
     WHERE B_NO = #{boardNo}
 </select>
 
-<insert id="insertBoardInfo" parameterType="BoardInfoMap" >
+<insert id="insertBoardInfo" parameterType="int" >
     INSERT INTO BOARD (
         M_NO, B_TITLE, B_DETAIL, DATETIME, VIEWS
     )
@@ -50,7 +50,7 @@
            )
 </insert>
 
-<update id="updateBoardInfo" parameterType="BoardInfoMap">
+<update id="updateBoardInfo" >
     UPDATE BOARD
     SET B_TITLE = #{boardTitle}, B_DETAIL = #{boardDetail}
     WHERE B_NO = #{boardNo}
