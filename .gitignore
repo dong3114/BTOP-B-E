@@ -145,3 +145,4 @@ application-*.properties
 
 __pycache__/
 *.pyc
+stt-normalizer-python/__pycache__/app.cpython-311.pyc
